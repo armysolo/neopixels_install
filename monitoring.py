@@ -11,15 +11,27 @@ import multiprocessing
 class StatusMonitor:
 
     def __init__(self):
+
+        # COLOR SETTINGS:
+        self.bed_color = (0, 0, 255)
+        self.bed_heating_color = (0, 0, 100)
+        self.bed_cooling_color = (0, 100, 255)
+        self.extruder_color = (255, 0, 0)
+        self.extruder_heating_color = (100, 0, 0)
+        self.extruder_cooling_color = (255, 100, 0)
+        # OFFSET Values for rings:
+        self.bed_offset = 0
+        self.extruder_offset = 13
+        self.progress_offset = 7
+
         self.status = None
         self.bed_temp = 0
         self.bed_given = 0
         self.extruder_temp = 0
         self.extruder_given = 0
         self.progress = 0
-        self.pixel_pin = board.D18
+        self.pixel_pin = board.D21
         self.num_pixels = 48
-        self.color = None
         self.status_to_color_dict = {
             'Operational': (255, 255, 255),
             'Printing': (0, 255, 0),
@@ -32,6 +44,7 @@ class StatusMonitor:
             'Opening serial connection': (248, 248, 255),
             None: None
         }
+
         self.pixels = neopixel.NeoPixel(
             self.pixel_pin, self.num_pixels, brightness=0.2, auto_write=False,
             pixel_order=neopixel.GRB
@@ -71,7 +84,7 @@ class StatusMonitor:
             if progress == "0.0":
                 self.progress = 16
             else:
-                self.progress = calulate_pos(100, progress, 0)
+                self.progress = float(progress) * 16
 
         except:
             print("Jeszcze service nie bangla")
@@ -88,38 +101,38 @@ class StatusMonitor:
             for i in range(16):
                 if self.bed_temp <= self.bed_given:
                     if i <= self.bed_temp:
-                        self.pixels[(15 - i) % 16] = (0, 0, 255)
+                        self.pixels[(15 - i + self.bed_offset) % 16] = self.bed_color
                     elif i <= self.bed_given:
-                        self.pixels[(15 - i) % 16] = (0, 0, 100)
+                        self.pixels[(15 - i + self.bed_offset) % 16] = self.bed_heating_color
                     else:
-                        self.pixels[(15 - i) % 16] = (0, 0, 0)
+                        self.pixels[(15 - i + self.bed_offset) % 16] = (0, 0, 0)
                 else:
                     if i <= self.bed_given:
-                        self.pixels[(15 - i) % 16] = (0, 0, 255)
+                        self.pixels[(15 - i + self.bed_offset) % 16] = self.bed_color
                     elif i <= self.bed_temp:
-                        self.pixels[(15 - i) % 16] = (0, 100, 255)
+                        self.pixels[(15 - i + self.bed_offset) % 16] = self.bed_cooling_color
                     else:
-                        self.pixels[(15 - i) % 16] = (0, 0, 0)
+                        self.pixels[(15 - i + self.bed_offset) % 16] = (0, 0, 0)
 
                 if self.extruder_temp <= self.extruder_given:
                     if i <= self.extruder_temp:
-                        self.pixels[((15 - i + 13) % 16) + 16] = (255, 0, 0)
+                        self.pixels[((15 - i + self.extruder_offset) % 16) + 16] = self.extruder_color
                     elif i <= self.extruder_given:
-                        self.pixels[((15 - i + 13) % 16) + 16] = (100, 0, 0)
+                        self.pixels[((15 - i + self.extruder_offset) % 16) + 16] = self.extruder_heating_color
                     else:
-                        self.pixels[((15 - i + 13) % 16) + 16] = (0, 0, 0)
+                        self.pixels[((15 - i + self.extruder_offset) % 16) + 16] = (0, 0, 0)
                 else:
                     if i <= self.extruder_given:
-                        self.pixels[((15 - i + 13) % 16) + 16] = (255, 0, 0)
+                        self.pixels[((15 - i + self.extruder_offset) % 16) + 16] = self.extruder_color
                     elif i <= self.extruder_temp:
-                        self.pixels[((15 - i + 13) % 16) + 16] = (255, 100, 0)
+                        self.pixels[((15 - i + self.extruder_offset) % 16) + 16] = self.extruder_cooling_color
                     else:
-                        self.pixels[((15 - i + 13) % 16) + 16] = (0, 0, 0)
+                        self.pixels[((15 - i + self.extruder_offset) % 16) + 16] = (0, 0, 0)
 
                 if i <= self.progress:
-                    self.pixels[((15 - i + 1) % 16) + 32] = progress_color
+                    self.pixels[((15 - i + self.progress_offset) % 16) + 32] = progress_color
                 else:
-                    self.pixels[((15 - i + 1) % 16) + 32] = (0, 0, 0)
+                    self.pixels[((15 - i + self.progress_offset) % 16) + 32] = (0, 0, 0)
             #print (self.pixels)
             self.pixels.show()
 
@@ -137,7 +150,6 @@ def waiting(interval, pixels):
     colorlist = [(255, 0 ,0), (0, 255, 0), (0, 0, 255)]
 
     for i in range(3):
-        print ("Petelka " + str(i))
         for j in range(16):
             pixel = ((15 - j) % 16)
             pixels[pixel] = colorlist[i]
@@ -173,6 +185,7 @@ def waiting(interval, pixels):
             pixels.show()
             time.sleep(interval)
     """
+
 
 Monitor = StatusMonitor()
 while True:
